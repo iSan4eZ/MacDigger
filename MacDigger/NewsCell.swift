@@ -8,12 +8,11 @@
 
 import Foundation
 import UIKit
+import SDWebImage
 
 class NewsCell : UITableViewCell {
     
-    var topic : String?
-    var date : String?
-    var mainImage : UIImage?
+    var news : News!
     
     var imagePreview : UIImageView = {
         var imageView = UIImageView()
@@ -26,6 +25,7 @@ class NewsCell : UITableViewCell {
         var textView = UITextView()
         textView.translatesAutoresizingMaskIntoConstraints = false
         textView.isScrollEnabled = false
+        //textView.font = UILabel().font
         return textView
     }()
     
@@ -76,14 +76,13 @@ class NewsCell : UITableViewCell {
     
     override func layoutSubviews() {
         super.layoutSubviews()
-        //self.backgroundColor = UIColor.green
-        if let mainImage = mainImage{
-            imagePreview.image = mainImage
+        if let mainImage = news.image{
+            imagePreview.sd_setImage(with: mainImage)
         }
-        if let topic = topic{
+        if let topic = news.topic{
             topicView.text = topic
         }
-        if let date = date{
+        if let date = news.date{
             dateView.text = date
         }
     }

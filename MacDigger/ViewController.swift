@@ -8,7 +8,14 @@
 
 import UIKit
 import Alamofire
-import SDWebImage
+
+struct News {
+    var image : URL!
+    let topic : String!
+    let date : String!
+    let index : Int!
+    let url : URL!
+}
 
 class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSource {
 
@@ -16,11 +23,9 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
     
     var newsList = [News]()
     
-    struct News {
-        var image : UIImage = #imageLiteral(resourceName: "empty_image")
-        let topic : String!
-        let date : String!
-    }
+    let userAgent = "Mozilla/5.0 (iPhone; CPU iPhone OS 11_0 like Mac OS X) AppleWebKit/604.1.38 (KHTML, like Gecko) Version/11.0 Mobile/15A372 Safari/604.1"
+    
+
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -31,13 +36,35 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
         tvNews.rowHeight = UITableViewAutomaticDimension
         tvNews.estimatedRowHeight = 300
         
-        newsList = [News.init(image: #imageLiteral(resourceName: "empty_image"), topic: "Как Apple создаёт рекламые видео", date: "22 МАР, 2018"),
-        News.init(image: #imageLiteral(resourceName: "empty_image"), topic: "Разработчики игры The Walking Dead: Our World используют iPhone X для создания персонажей", date: "22 МАР, 2018"),
-        News.init(image: #imageLiteral(resourceName: "empty_image"), topic: "Apple запустит тестовое производство iPhone 2018 года в апреле", date: "22 МАР, 2018"),
-        News.init(image: #imageLiteral(resourceName: "empty_image"), topic: "Почему блокировка Telegram вызвала большой ажиотаж", date: "22 МАР, 2018"),
-        News.init(image: #imageLiteral(resourceName: "empty_image"), topic: "Apple Watch определяют аритмию с точностью 97%", date: "22 МАР, 2018")]
+        for i in 1...10{
+            loadNews(page: i, completion: {})
+        }
     }
 
+    func loadNews(page: Int, completion: @escaping () -> ()) {
+        Alamofire.request("http://macdigger.ru/page/\(page)", headers: ["User-Agent": userAgent]).response { response in
+            if let data = response.data, let htmlCode = String(data: data, encoding: .utf8) {
+                let rawNews = htmlCode.sliceToArray(from: "<div class=\"post section post-", to: "</a>")!
+                for topic in rawNews{
+                    let index = Int(topic.split(separator: " ").first!.description)
+                    if !self.newsList.contains { $0.index == index }{
+                        self.newsList.append(News.init(
+                            image: URL.init(string: topic.sliceToArray(from: "src=\"", to: "\" alt=\"")!.first!),
+                            topic: topic.sliceToArray(from: "<h2 class=\"post-title heading-font\">", to: "</h2>")!.first,
+                            date: topic.sliceToArray(from: "<span class=\"post-date-author body-font\">\n\t\t\t", to: "\t\t \t\t\t </span>")!.first,
+                            index: index,
+                            url: URL.init(string: topic.sliceToArray(from: "<a href=\"", to: "\" class=\"loop-link tappable clearfix \">")!.first!)
+                        ))
+                    }
+                    self.tvNews.beginUpdates()
+                    self.tvNews.insertRows(at: [IndexPath(row: self.newsList.count-1, section: 0)], with: .fade)
+                    self.tvNews.endUpdates()
+                }
+            }
+            completion()
+        }
+    }
+    
     override func didReceiveMemoryWarning() {
         super.didReceiveMemoryWarning()
         // Dispose of any resources that can be recreated.
@@ -49,9 +76,7 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell{
         let cell = tvNews.dequeueReusableCell(withIdentifier: "NewsCell") as! NewsCell
-        cell.mainImage = newsList[indexPath.row].image
-        cell.topic = newsList[indexPath.row].topic
-        cell.date = newsList[indexPath.row].date
+        cell.news = newsList[indexPath.row]
         cell.layoutSubviews()
         return cell
     }
@@ -62,3 +87,34 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
     
 }
 
+extension String {
+    
+    func sliceToArray(from: String, to: String) -> [String]? {
+        var result = [String]()
+        if self.contains(from){
+            var startRange = self.range(of: from)!
+            let endRange = range(of: to, range: (startRange.upperBound..<self.endIndex))!
+            while let a = range(of: from, range: (startRange.upperBound..<endRange.lowerBound)) {
+                startRange = a
+            }
+            result.append(String(self[startRange.upperBound..<endRange.lowerBound]))
+            let next = self[startRange.upperBound..<self.endIndex]
+            let out = String(next).sliceToArray(from: from, to: to)
+            if out != nil && out!.count > 0{
+                for i in out!{
+                    result.append(i)
+                }
+            }
+        }
+        return result
+    }
+    
+    func slice(from: String, to: String) -> String? {
+        if self.contains(from){
+            let startRange = self.range(of: from)!
+            let endRange = range(of: to, range: (startRange.upperBound..<self.endIndex))!
+            return(String(self[startRange.upperBound..<endRange.lowerBound]))
+        }
+        return nil
+    }
+}
