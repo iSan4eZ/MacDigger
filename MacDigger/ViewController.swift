@@ -7,6 +7,8 @@
 //
 
 import UIKit
+import Alamofire
+import SDWebImage
 
 class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSource {
 
