@@ -25,7 +25,7 @@ class NewsCell : UITableViewCell {
         var textView = UITextView()
         textView.translatesAutoresizingMaskIntoConstraints = false
         textView.isScrollEnabled = false
-        //textView.font = UILabel().font
+        textView.font = UILabel().font.withSize(15)
         return textView
     }()
     
@@ -77,10 +77,11 @@ class NewsCell : UITableViewCell {
     override func layoutSubviews() {
         super.layoutSubviews()
         if let mainImage = news.image{
+            
             imagePreview.sd_setImage(with: mainImage)
         }
         if let topic = news.topic{
-            topicView.text = topic
+            topicView.text = "\(news.index) - \(topic)"
         }
         if let date = news.date{
             dateView.text = date
